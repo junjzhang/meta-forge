@@ -1,4 +1,5 @@
 build_output := env_var('HOME') / ".cache" / "prefix"
+export PYTHONHOSTPATH := ""
 
 cache:
   -rm output
@@ -27,24 +28,12 @@ clean-cache name:
 build-all: cache
   rattler-build build --recipe-dir . --no-include-recipe
 
-dev env_name="dev":
-  pixi project export conda-explicit-spec . -vvvv
-  micromamba create -n {{env_name}} --file default_linux-64_conda_spec.txt
-
-channel:
-  python -m http.server 8000 -d output
-
-lock:
-  -rm pixi.toml pixi.lock
-  pixi init --import environment.yml
-  pixi project export conda-explicit-spec . -vvvv
-
-test-venv package:
+venv package:
   just clean-cache {{ package }}
   micromamba create -c {{ build_output }} -n temp {{ package }} --yes
 
 s3-mirror:
-  mc mirror --exclude "bld/*" --exclude "src_cache/*" {{ build_output }} us3-gd/meta-forge/ --disable-multipart
+  mc mirror --exclude "bld/*" --exclude "src_cache/*" {{ build_output }} us3-gd/meta-forge/ --disable-multipart --overwrite --remove
 
 s3-mirror-rev:
   mc mirror --exclude "bld/*" --exclude "src_cache/*" us3-gd/meta-forge/ {{ build_output }} --disable-multipart

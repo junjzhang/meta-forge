@@ -12,6 +12,8 @@ source:
     tag: ${{ git_tag }}
 
 build:
+  number: ${{ build|int + (microarch_level|int) * 100 + 1 }}
+  string: py${{ python | version_to_buildstring }}_cuda${{ cuda | version_to_buildstring }}_pt${{ pytorch | replace('.', '') }}
   script:
     - export CUDA_HOME=$PREFIX
     - |

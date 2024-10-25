@@ -34,6 +34,7 @@ requirements:
     - accelerate
     - dm-tree
     - ignite
+    - msgspec
 
 # tests:
 #   - python:

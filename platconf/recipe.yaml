@@ -24,7 +24,8 @@ requirements:
   run:
     - ml-collections
     - absl-py
+    - colorlog
 tests:
   - python:
       imports:
-        - ml_collections
+        - platconf
