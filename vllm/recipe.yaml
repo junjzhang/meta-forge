@@ -1,0 +1,52 @@
+context:
+  name: vllm
+  git_url: https://github.com/vllm-project/vllm
+  git_tag: ${{ git.latest_tag( git_url ) }}
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+build:
+  number: ${{ build|int + (microarch_level|int) * 100 + 1 }}
+  string: py${{ python | version_to_buildstring }}_cuda${{ cuda | version_to_buildstring }}_pt${{ pytorch | replace('.', '') }}
+  script:
+    - export CUDA_HOME=$PREFIX
+    - |
+      export MAX_JOBS=$(( ($CPU_COUNT - 16) < 1 ? 1 : ($CPU_COUNT - 16) ))
+    - export TORCH_CUDA_ARCH_LIST="8.0+PTX 9.0+PTX"
+    - pip install . -vv --no-deps --no-build-isolation
+    # - pip install flashinfer -i https://flashinfer.ai/whl/cu124/torch2.4/
+
+requirements:
+  host:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cuda
+    - cuda-cudart-dev
+    - libcusparse-dev
+    - pytorch-cuda ${{ cuda }}
+    - pytorch
+    - python
+    - pip
+    - python-ninja
+    - packaging
+    - setuptools
+    - jinja2
+    - setuptools_scm
+    - cmake
+    - ccache
+    - psutil
+  run:
+    - einops
+    - pytorch
+    - fsspec
+    - transformers
+tests:
+  - python:
+      imports:
+        - torch
+        - vllm
