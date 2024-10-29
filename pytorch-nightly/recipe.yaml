@@ -1,0 +1,80 @@
+context:
+  name: "pytorch-nightly"
+  git_url: https://github.com/pytorch/pytorch.git
+  # git_tag: ${{ git.latest_tag( git_url ) }}
+  git_tag: "v2.5.1-rc1"
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] | replace("-",".") }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build|int + (microarch_level|int) * 100 + 1 }}
+  string: py${{ python | version_to_buildstring }}_cuda${{ cuda | version_to_buildstring }}
+  script:
+    # - export USE_CUDA=1
+    - export CMAKE_C_COMPILER_LAUNCHER=sccache
+    - export CMAKE_CXX_COMPILER_LAUNCHER=sccache
+    # - export C="sccache $C"
+    - export CUDA_HOME=$PREFIX
+    - export SCCACHE_DIRECT=true
+    # - export SCCACHE_DIR=$HOME/sccache_pytorch
+    # - export SCCACHE_CACHE_SIZE=1G
+    # - export SCCACHE_DIR="$PREFIX/cache"
+    - $CUDA_HOME/bin/nvcc -V
+    - |
+      export MAX_JOBS=$(( ($CPU_COUNT - 16) < 1 ? 1 : ($CPU_COUNT - 16) ))
+    # - export TORCH_CUDA_ARCH_LIST=8.0
+    - export TORCH_CUDA_ARCH_LIST="8.0+PTX 9.0+PTX"
+    - pip install . -vv --no-deps --no-build-isolation
+    - sccache --show-stats
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - sccache
+    - ccache
+    - cmake >= 3.18
+    - ninja
+  host:
+    - pkg-config
+    - libuv
+    - cuda
+    - cuda-cudart-dev ${{ cuda }}
+    - libcusparse-dev
+    - conda-forge::cudnn
+    - python
+    - pip
+    - pyyaml
+    - mkl-include
+    - mkl == 2020.2
+    - typing_extensions
+    - numpy == 2.0.1
+    - openssl
+    - llvmdev
+    - magma
+    # - python-ninja
+    - packaging
+    - setuptools == 72.1.0
+  run:
+    - mkl == 2024.0.0
+    - pytorch-cuda ${{ cuda }}
+    - pytorch-mutex
+    - typing_extensions
+    - filelock
+    - networkx
+    - jinja2
+    - pyyaml
+    - libcublas
+    - python
+tests:
+  - script:
+      - python -c "import torch"
+    requirements:
+      run:
+        - conda-forge::cudnn

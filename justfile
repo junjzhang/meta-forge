@@ -19,8 +19,8 @@ build target: cache
   -c conda-forge \
 
 clean-bld name:
-  -rm -rf output/bld/rattler-build_{{name}}/
-  -rm -rf output/**/{{name}}-*
+  -rm -rf {{ build_output }}/bld/rattler-build_{{name}}/
+  -rm -rf {{ build_output }}/**/{{name}}-*
 
 clean-cache name:
   -micromamba info --json | jq -r '.["package cache"][]' | xargs -I {} find {} -name "{{ name }}*" | xargs -I {} rm -rf {}
