@@ -1,0 +1,61 @@
+context:
+  name: "transformer-engine"
+  git_url: https://github.com/NVIDIA/TransformerEngine.git
+  git_tag: ${{ git.latest_tag( git_url ) }}
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build|int + (microarch_level|int) * 100 + 1 }}
+  string: py${{ python | version_to_buildstring }}_cuda${{ cuda | version_to_buildstring }}_pt${{ pytorch | replace('.', '') }}
+  script:
+   # - git submodule update --init --recursive
+    - export CUDA_HOME=$PREFIX
+    - |
+      export MAX_JOBS=$(( ($CPU_COUNT - 16) < 1 ? 1 : ($CPU_COUNT - 16) ))
+    - export TORCH_CUDA_ARCH_LIST="8.0+PTX 9.0+PTX"
+    - export NVTE_FRAMEWORK=pytorch
+    - pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - cuda
+    - pytorch-cuda ${{ cuda }}
+    - pytorch
+    - python
+    - pip
+    - psutil
+    - python-ninja
+    - packaging
+    - conda-forge::cudnn
+    - setuptools
+    - pybind11
+    - flash-attn
+    # torch:
+    - fsspec
+  run:
+    - pydantic
+    - pytorch
+    - fsspec
+    - numpy
+    - flash-attn
+
+  ignore_run_exports:
+    from_package:
+      - gcc_${{ target_platform }}
+      - gxx_${{ target_platform }}
+      - cudnn
+
+tests:
+  - python:
+      imports:
+        - transformer_engine.pytorch
